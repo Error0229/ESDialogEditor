@@ -19,13 +19,28 @@ import {
 import DialogPreview from "./dialog-preview";
 
 const DialogEditor = () => {
-  const [scenes, setScenes] = useState(() => {
-    const saved = localStorage.getItem("dialogScenes");
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [scenes, setScenes] = useState([]);
+  const [previewSceneIndex, setPreviewSceneIndex] = useState<number | null>(
+    null
+  );
 
+  // Move localStorage logic into useEffect
   useEffect(() => {
-    localStorage.setItem("dialogScenes", JSON.stringify(scenes));
+    const savedScenes = window?.localStorage?.getItem("dialogScenes");
+    if (savedScenes) {
+      try {
+        setScenes(JSON.parse(savedScenes));
+      } catch (e) {
+        console.error("Failed to parse saved scenes:", e);
+      }
+    }
+  }, []);
+
+  // Save scenes when they change
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("dialogScenes", JSON.stringify(scenes));
+    }
   }, [scenes]);
 
   const { theme, setTheme } = useTheme();
@@ -159,10 +174,6 @@ const DialogEditor = () => {
     link.click();
     URL.revokeObjectURL(url);
   };
-  // Add this state inside DialogEditor component
-  const [previewSceneIndex, setPreviewSceneIndex] = useState<number | null>(
-    null
-  );
 
   // Add this function to transform dialog data
   const getPreviewMessages = (sceneIndex: number) => {
