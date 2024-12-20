@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Trash2, Plus, Save, Download, Moon, Sun, Eye } from "lucide-react";
+import { Trash2, Plus, Download, Moon, Sun } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "next-themes";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
