@@ -1,6 +1,5 @@
 import { ThemeProvider } from "next-themes";
 import { Inter } from 'next/font/google';
-import './globals.css'; // Make sure this path is correct
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -17,3 +16,4 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   );
 }
+
