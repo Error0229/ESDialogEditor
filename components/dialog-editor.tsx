@@ -1,6 +1,14 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Trash2, Plus, Download, Moon, Sun } from "lucide-react";
+import {
+  Trash2,
+  Plus,
+  Download,
+  Moon,
+  Sun,
+  Check,
+  ChevronsUpDown,
+} from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "next-themes";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +16,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+
 import {
   Select,
   SelectContent,
@@ -17,29 +39,212 @@ import {
 } from "@/components/ui/select";
 // In DialogEditor.tsx, add this import at the top
 import DialogPreview from "./dialog-preview";
+import { cn } from "@/lib/utils";
 
 const DialogEditor = () => {
   const [scenes, setScenes] = useState([]);
   const [previewSceneIndex, setPreviewSceneIndex] = useState<number | null>(
     null
   );
+  // Add these at the top of DialogEditor component
+  const [uniqueCharacterNames, setUniqueCharacterNames] = useState<string[]>(
+    () => {
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem("characterNames");
+        return saved ? JSON.parse(saved) : [];
+      }
+      return [];
+    }
+  );
 
+  const [uniqueCharacterImages, setUniqueCharacterImages] = useState<string[]>(
+    () => {
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem("characterImages");
+        return saved ? JSON.parse(saved) : [];
+      }
+      return [];
+    }
+  );
+
+  // Add these effects to persist changes
+  useEffect(() => {
+    if (typeof window !== "undefined" && uniqueCharacterNames.length > 0) {
+      localStorage.setItem(
+        "characterNames",
+        JSON.stringify(uniqueCharacterNames)
+      );
+    }
+  }, [uniqueCharacterNames]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && uniqueCharacterImages.length > 0) {
+      localStorage.setItem(
+        "characterImages",
+        JSON.stringify(uniqueCharacterImages)
+      );
+    }
+  }, [uniqueCharacterImages]);
+
+  // Update the existing useEffect to merge with stored names
+  useEffect(() => {
+    const names = new Set<string>(uniqueCharacterNames);
+    const images = new Set<string>(uniqueCharacterImages);
+
+    scenes.forEach((scene) => {
+      if (scene.NPCName) names.add(scene.NPCName);
+
+      if (scene?.Dialogs) {
+        scene.Dialogs.forEach((dialog) => {
+          if (dialog.Speaker) names.add(dialog.Speaker);
+
+          if (dialog?.Characters) {
+            dialog.Characters.forEach((char) => {
+              if (char?.Name) names.add(char.Name);
+              if (char?.Image) images.add(char.Image);
+            });
+          }
+
+          if (dialog?.EndDialog?.NextState) {
+            dialog.EndDialog.NextState.forEach((state) => {
+              if (state?.Name) names.add(state.Name);
+            });
+          }
+        });
+      }
+    });
+
+    setUniqueCharacterNames(Array.from(names));
+    setUniqueCharacterImages(Array.from(images));
+  }, [scenes]);
+  // Create these components for reuse
+  // Add these types at the top of the file
+
+  // Add these functions near the other state management functions
+  const removeCharacterName = (nameToRemove: string) => {
+    setUniqueCharacterNames(
+      uniqueCharacterNames.filter((name) => name !== nameToRemove)
+    );
+  };
+
+  const removeCharacterImage = (imageToRemove: string) => {
+    setUniqueCharacterImages(
+      uniqueCharacterImages.filter((image) => image !== imageToRemove)
+    );
+  };
+
+  // Update the AutocompleteInput component
+  const AutocompleteInput = ({ value, onChange, items = [], placeholder }) => {
+    const [open, setOpen] = useState(false);
+    const [search, setSearch] = useState("");
+
+    const filteredItems = (items || []).filter((item) =>
+      item.toLowerCase().includes(search.toLowerCase())
+    );
+
+    const handleDelete = (item: string, e: React.MouseEvent) => {
+      e.stopPropagation();
+      // Remove from the appropriate list based on placeholder
+      if (placeholder.includes("name")) {
+        removeCharacterName(item);
+      } else if (placeholder.includes("image")) {
+        removeCharacterImage(item);
+      }
+    };
+
+    return (
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between"
+          >
+            {value || placeholder}
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-full p-0">
+          <Command>
+            <CommandInput
+              placeholder={placeholder}
+              value={search}
+              onValueChange={setSearch}
+            />
+            <CommandList>
+              <CommandEmpty>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start"
+                  onClick={() => {
+                    onChange(search);
+                    setOpen(false);
+                    setSearch("");
+                  }}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add &quot;{search}&quot;
+                </Button>
+              </CommandEmpty>
+              <CommandGroup>
+                {filteredItems.map((item) => (
+                  <CommandItem
+                    key={item}
+                    onSelect={() => {
+                      onChange(item);
+                      setOpen(false);
+                      setSearch("");
+                    }}
+                    className="flex justify-between"
+                  >
+                    <div className="flex items-center">
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          value === item ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      {item}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-4 w-4 p-0 hover:bg-destructive/10"
+                      onClick={(e) => handleDelete(item, e)}
+                    >
+                      <Trash2 className="h-3 w-3 text-destructive" />
+                    </Button>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    );
+  };
   // Move localStorage logic into useEffect
   useEffect(() => {
-    const savedScenes = window?.localStorage?.getItem("dialogScenes");
-    if (savedScenes) {
+    if (typeof window !== "undefined") {
       try {
-        setScenes(JSON.parse(savedScenes));
+        const savedScenes = localStorage.getItem("dialogScenes");
+        if (savedScenes) {
+          const parsedScenes = JSON.parse(savedScenes);
+          if (Array.isArray(parsedScenes)) {
+            setScenes(parsedScenes);
+          }
+        }
       } catch (e) {
-        console.error("Failed to parse saved scenes:", e);
+        console.error("Failed to load scenes from localStorage:", e);
       }
     }
   }, []);
 
-  // Save scenes when they change
+  // Update the save effect to prevent unnecessary saves
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem("dialogScenes", JSON.stringify(scenes));
+    if (typeof window !== "undefined" && scenes.length > 0) {
+      localStorage.setItem("dialogScenes", JSON.stringify(scenes));
     }
   }, [scenes]);
 
@@ -184,6 +389,30 @@ const DialogEditor = () => {
       position: dialog.Position.toLowerCase() === "right" ? "right" : "left",
     }));
   };
+
+  const addOption = (sceneIndex, dialogIndex) => {
+    const newScenes = [...scenes];
+    newScenes[sceneIndex].Dialogs[dialogIndex].Options.push({
+      Text: "",
+      NextDialog: null,
+    });
+    setScenes(newScenes);
+  };
+
+  const updateOption = (sceneIndex, dialogIndex, optionIndex, field, value) => {
+    const newScenes = [...scenes];
+    newScenes[sceneIndex].Dialogs[dialogIndex].Options[optionIndex][field] =
+      value;
+    setScenes(newScenes);
+  };
+
+  const removeOption = (sceneIndex, dialogIndex, optionIndex) => {
+    const newScenes = [...scenes];
+    newScenes[sceneIndex].Dialogs[dialogIndex].Options = newScenes[
+      sceneIndex
+    ].Dialogs[dialogIndex].Options.filter((_, i) => i !== optionIndex);
+    setScenes(newScenes);
+  };
   return (
     <div className="p-4 w-3/4 mx-auto space-y-6">
       <motion.div
@@ -192,8 +421,8 @@ const DialogEditor = () => {
         transition={{ duration: 0.5 }}
         className="flex justify-between items-center"
       >
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-600 text-transparent bg-clip-text">
-          Dialog Scene Editor
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-white text-transparent bg-clip-text">
+          EverSnow Dialog Editor
         </h1>
         <div className="space-x-4">
           <Button onClick={exportJson} variant="default">
@@ -262,16 +491,6 @@ const DialogEditor = () => {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>NPC Name</Label>
-                  <Input
-                    value={scene.NPCName}
-                    onChange={(e) =>
-                      updateScene(sceneIndex, "NPCName", e.target.value)
-                    }
-                    placeholder="NPC Name"
-                  />
-                </div>
-                <div className="space-y-2">
                   <Label>Label</Label>
                   <Input
                     value={scene.Label}
@@ -279,6 +498,17 @@ const DialogEditor = () => {
                       updateScene(sceneIndex, "Label", e.target.value)
                     }
                     placeholder="Label"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>NPC Name</Label>
+                  <AutocompleteInput
+                    value={scene.NPCName}
+                    onChange={(value) =>
+                      updateScene(sceneIndex, "NPCName", value)
+                    }
+                    items={uniqueCharacterNames}
+                    placeholder="Select NPC name"
                   />
                 </div>
                 <div className="space-y-2">
@@ -340,19 +570,21 @@ const DialogEditor = () => {
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <Label>Speaker</Label>
-                            <Input
+                            <AutocompleteInput
                               value={dialog.Speaker}
-                              onChange={(e) =>
+                              onChange={(value) =>
                                 updateDialog(
                                   sceneIndex,
                                   dialogIndex,
                                   "Speaker",
-                                  e.target.value
+                                  value
                                 )
                               }
-                              placeholder="Speaker"
+                              items={uniqueCharacterNames}
+                              placeholder="Select speaker"
                             />
                           </div>
+
                           <div className="space-y-2">
                             <Label>Position</Label>
                             <Select
@@ -448,18 +680,19 @@ const DialogEditor = () => {
                               <div className="grid grid-cols-2 gap-2">
                                 <div className="space-y-2">
                                   <Label>Name</Label>
-                                  <Input
+                                  <AutocompleteInput
                                     value={char.Name}
-                                    onChange={(e) =>
+                                    onChange={(value) =>
                                       updateCharacter(
                                         sceneIndex,
                                         dialogIndex,
                                         charIndex,
                                         "Name",
-                                        e.target.value
+                                        value
                                       )
                                     }
-                                    placeholder="Character Name"
+                                    items={uniqueCharacterNames || []}
+                                    placeholder="Select character name"
                                   />
                                 </div>
                                 <div className="space-y-2">
@@ -481,11 +714,11 @@ const DialogEditor = () => {
                                     </SelectTrigger>
                                     <SelectContent>
                                       <SelectItem value="Idle">Idle</SelectItem>
-                                      <SelectItem value="Talking">
-                                        Talking
+                                      <SelectItem value="Shaking">
+                                        Shaking
                                       </SelectItem>
-                                      <SelectItem value="Walking">
-                                        Walking
+                                      <SelectItem value="Zooming">
+                                        Zooming
                                       </SelectItem>
                                       <SelectItem value="Running">
                                         Running
@@ -522,23 +755,103 @@ const DialogEditor = () => {
                                   </Select>
                                 </div>
                                 <div className="space-y-2">
-                                  <Label>Image Path</Label>
-                                  <Input
+                                  <Label>Image</Label>
+                                  <AutocompleteInput
                                     value={char.Image}
-                                    onChange={(e) =>
+                                    onChange={(value) =>
                                       updateCharacter(
                                         sceneIndex,
                                         dialogIndex,
                                         charIndex,
                                         "Image",
-                                        e.target.value
+                                        value
                                       )
                                     }
-                                    placeholder="Image path"
+                                    items={uniqueCharacterImages}
+                                    placeholder="Select character image"
                                   />
                                 </div>
                               </div>
                             </Card>
+                          ))}
+                        </div>
+                        {/* Options Section */}
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <Label>Dialog Options</Label>
+                            <Button
+                              onClick={() => addOption(sceneIndex, dialogIndex)}
+                              variant="outline"
+                              size="sm"
+                            >
+                              <Plus className="mr-2 h-4 w-4" />
+                              Add Option
+                            </Button>
+                          </div>
+                          {dialog.Options.map((option, optionIndex) => (
+                            <motion.div
+                              key={optionIndex}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              <Card className="p-4">
+                                <div className="flex justify-between items-center mb-2">
+                                  <span className="text-sm font-medium">
+                                    Option {optionIndex + 1}
+                                  </span>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() =>
+                                      removeOption(
+                                        sceneIndex,
+                                        dialogIndex,
+                                        optionIndex
+                                      )
+                                    }
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div className="space-y-2">
+                                    <Label>Option Text</Label>
+                                    <Textarea
+                                      value={option.Text}
+                                      onChange={(e) =>
+                                        updateOption(
+                                          sceneIndex,
+                                          dialogIndex,
+                                          optionIndex,
+                                          "Text",
+                                          e.target.value
+                                        )
+                                      }
+                                      placeholder="What should this option say?"
+                                      rows={2}
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Next Dialog ID</Label>
+                                    <Input
+                                      type="number"
+                                      value={option.NextDialog || ""}
+                                      onChange={(e) =>
+                                        updateOption(
+                                          sceneIndex,
+                                          dialogIndex,
+                                          optionIndex,
+                                          "NextDialog",
+                                          parseInt(e.target.value) || null
+                                        )
+                                      }
+                                      placeholder="Which dialog should this lead to?"
+                                    />
+                                  </div>
+                                </div>
+                              </Card>
+                            </motion.div>
                           ))}
                         </div>
 
@@ -579,32 +892,39 @@ const DialogEditor = () => {
                                   </Button>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2">
-                                  <Input
-                                    value={state.Name}
-                                    onChange={(e) =>
-                                      updateEndDialogState(
-                                        sceneIndex,
-                                        dialogIndex,
-                                        stateIndex,
-                                        "Name",
-                                        e.target.value
-                                      )
-                                    }
-                                    placeholder="Character Name"
-                                  />
-                                  <Input
-                                    value={state.State}
-                                    onChange={(e) =>
-                                      updateEndDialogState(
-                                        sceneIndex,
-                                        dialogIndex,
-                                        stateIndex,
-                                        "State",
-                                        e.target.value
-                                      )
-                                    }
-                                    placeholder="New State"
-                                  />
+                                  <div className="space-y-2">
+                                    <Label>Character Name</Label>
+                                    <AutocompleteInput
+                                      value={state.Name}
+                                      onChange={(value) =>
+                                        updateEndDialogState(
+                                          sceneIndex,
+                                          dialogIndex,
+                                          stateIndex,
+                                          "Name",
+                                          value
+                                        )
+                                      }
+                                      items={uniqueCharacterNames}
+                                      placeholder="Select character name"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Next Character State</Label>
+                                    <Input
+                                      value={state.State}
+                                      onChange={(e) =>
+                                        updateEndDialogState(
+                                          sceneIndex,
+                                          dialogIndex,
+                                          stateIndex,
+                                          "State",
+                                          e.target.value
+                                        )
+                                      }
+                                      placeholder="New State"
+                                    />
+                                  </div>
                                 </div>
                               </Card>
                             )
