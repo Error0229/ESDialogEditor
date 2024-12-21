@@ -262,11 +262,43 @@ const DialogEditor = () => {
       },
     ]);
   };
+  // Add this near the top of the DialogEditor component
+  const [highestDialogId, setHighestDialogId] = useState(0);
 
+  // Update the useEffect that loads scenes to find the highest dialog ID
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const savedScenes = localStorage.getItem("dialogScenes");
+        if (savedScenes) {
+          const parsedScenes = JSON.parse(savedScenes);
+          if (Array.isArray(parsedScenes)) {
+            setScenes(parsedScenes);
+
+            // Find highest dialog ID
+            let maxId = 0;
+            parsedScenes.forEach((scene) => {
+              scene.Dialogs?.forEach((dialog) => {
+                maxId = Math.max(maxId, dialog.DialogId || 0);
+              });
+            });
+            setHighestDialogId(maxId);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load scenes from localStorage:", e);
+      }
+    }
+  }, []);
+
+  // Modify the addDialog function
   const addDialog = (sceneIndex) => {
+    const newDialogId = highestDialogId + 1;
+    setHighestDialogId(newDialogId);
+
     const newScenes = [...scenes];
     newScenes[sceneIndex].Dialogs.push({
-      DialogId: Date.now(),
+      DialogId: newDialogId,
       Speaker: "",
       Text: "",
       Position: "Center",
@@ -279,6 +311,36 @@ const DialogEditor = () => {
     });
     setScenes(newScenes);
   };
+
+  // Add a new function to update dialog ID
+  const updateDialogId = (sceneIndex, dialogIndex, newId) => {
+    const newScenes = [...scenes];
+    const currentId = newScenes[sceneIndex].Dialogs[dialogIndex].DialogId;
+
+    // Check if ID already exists in any scene
+    const idExists = scenes.some((scene) =>
+      scene.Dialogs.some(
+        (dialog) =>
+          dialog.DialogId === parseInt(newId) && dialog.DialogId !== currentId
+      )
+    );
+
+    if (idExists) {
+      alert("This Dialog ID already exists. Please choose a different one.");
+      return;
+    }
+
+    newScenes[sceneIndex].Dialogs[dialogIndex].DialogId = parseInt(newId);
+    setScenes(newScenes);
+
+    // Update highest ID if necessary
+    if (parseInt(newId) > highestDialogId) {
+      setHighestDialogId(parseInt(newId));
+    }
+  };
+
+  // In the dialog render section, add the Dialog ID input field:
+  // Find this section in the existing CardContent:
 
   const addEndDialogState = (sceneIndex, dialogIndex) => {
     const newScenes = [...scenes];
@@ -555,8 +617,21 @@ const DialogEditor = () => {
                   >
                     <Card className="w-full">
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-                        <CardTitle className="text-base">
-                          Dialog {dialogIndex + 1}
+                        <CardTitle className="text-base flex items-center gap-2">
+                          Dialog
+                          <Input
+                            type="number"
+                            value={dialog.DialogId}
+                            onChange={(e) =>
+                              updateDialogId(
+                                sceneIndex,
+                                dialogIndex,
+                                e.target.value
+                              )
+                            }
+                            placeholder="Dialog ID"
+                            className="w-24" // Add fixed width for better appearance
+                          />
                         </CardTitle>
                         <Button
                           variant="ghost"
