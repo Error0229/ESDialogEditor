@@ -302,6 +302,7 @@ const DialogEditor = () => {
       Speaker: "",
       Text: "",
       Position: "Center",
+      DialogImage: "Common",
       NextDialogId: null,
       Options: [],
       Characters: [],
@@ -483,7 +484,7 @@ const DialogEditor = () => {
         transition={{ duration: 0.5 }}
         className="flex justify-between items-center"
       >
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-white text-transparent bg-clip-text">
+        <h1 className="text-3xl font-bold bg-gradieNt-to-r from-blue-400 to-white text-transparent bg-clip-text">
           EverSnow Dialog Editor
         </h1>
         <div className="space-x-4">
@@ -683,7 +684,7 @@ const DialogEditor = () => {
                               </SelectContent>
                             </Select>
                           </div>
-                          <div className="space-y-2 col-span-2">
+                          <div className="space-y-2">
                             <Label>Next Dialog ID</Label>
                             <Input
                               type="number"
@@ -698,6 +699,36 @@ const DialogEditor = () => {
                               }
                               placeholder="Next Dialog ID"
                             />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Dialog image</Label>
+                            <Select
+                              value={dialog.DialogImage}
+                              onValueChange={(value) =>
+                                updateDialog(
+                                  sceneIndex,
+                                  dialogIndex,
+                                  "DialogImage",
+                                  value
+                                )
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select Dialog image" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Common">Common</SelectItem>
+                                <SelectItem value="Thinking">
+                                  Thinking
+                                </SelectItem>
+                                <SelectItem value="Overthinking">
+                                  Overthinking
+                                </SelectItem>
+                                <SelectItem value="Surprising">
+                                  Surprising
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
                           <div className="space-y-2 col-span-2">
                             <Label>Dialog Text</Label>
