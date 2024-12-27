@@ -484,7 +484,7 @@ const DialogEditor = () => {
         transition={{ duration: 0.5 }}
         className="flex justify-between items-center"
       >
-        <h1 className="text-3xl font-bold bg-gradieNt-to-r from-blue-400 to-white text-transparent bg-clip-text">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-white text-transparent bg-clip-text">
           EverSnow Dialog Editor
         </h1>
         <div className="space-x-4">
