@@ -49,22 +49,39 @@ const DialogPreview: React.FC<DialogPreviewProps> = ({
   ) => {
     if (!currentDialog) return;
 
+    // First add the options-only dialog
     setMessageHistory((prev) => [
       ...prev,
       {
-        dialog: currentDialog,
-        selectedOption: optionText,
+        dialog: {
+          ...currentDialog,
+          Text: "", // Clear the text since it's an options dialog
+        },
+      },
+      // Then add the selected option as player's choice
+      {
+        dialog: {
+          ...currentDialog,
+          Speaker: "Player",
+          Text: optionText,
+          Position: "right",
+        },
       },
     ]);
+
     setCurrentDialogId(nextDialogId);
     setShowOptions(true);
   };
 
+  // Modify handleNextDialog to use default next dialog ID
   const handleNextDialog = () => {
     if (!currentDialog) return;
 
     setMessageHistory((prev) => [...prev, { dialog: currentDialog }]);
-    setCurrentDialogId(currentDialog.NextDialogId);
+    // If NextDialogId is not set, default to current DialogId + 1
+    setCurrentDialogId(
+      currentDialog.NextDialogId ?? currentDialog.DialogId + 1
+    );
     setShowOptions(true);
   };
 
@@ -89,57 +106,40 @@ const DialogPreview: React.FC<DialogPreviewProps> = ({
             {/* Message History */}
             {messageHistory.map((entry, index) => (
               <React.Fragment key={`history-${index}`}>
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className={`flex ${
-                    entry.dialog.Position.toLowerCase() === "right"
-                      ? "justify-end"
-                      : "justify-start"
-                  } mb-4`}
-                >
-                  <div
-                    className={`flex ${
-                      entry.dialog.Position.toLowerCase() === "right"
-                        ? "flex-row-reverse"
-                        : "flex-row"
-                    } items-end`}
-                  >
-                    <Avatar className="w-8 h-8">
-                      <AvatarImage
-                        src={`https://api.dicebear.com/6.x/initials/svg?seed=${entry.dialog.Speaker}`}
-                      />
-                      <AvatarFallback>{entry.dialog.Speaker[0]}</AvatarFallback>
-                    </Avatar>
-                    <div
-                      className={`mx-2 p-3 rounded-lg ${
-                        entry.dialog.Position.toLowerCase() === "right"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-secondary text-secondary-foreground"
-                      }`}
-                    >
-                      <p className="text-sm">{entry.dialog.Text}</p>
-                    </div>
-                  </div>
-                </motion.div>
-                {/* Render selected option as a player response */}
-                {entry.selectedOption && (
+                {entry.dialog.Text && ( // Only show dialog bubble if there's text
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3 }}
-                    className="flex justify-end mb-4"
+                    className={`flex ${
+                      entry.dialog.Position.toLowerCase() === "right"
+                        ? "justify-end"
+                        : "justify-start"
+                    } mb-4`}
                   >
-                    <div className="flex flex-row-reverse items-end">
+                    <div
+                      className={`flex ${
+                        entry.dialog.Position.toLowerCase() === "right"
+                          ? "flex-row-reverse"
+                          : "flex-row"
+                      } items-end`}
+                    >
                       <Avatar className="w-8 h-8">
                         <AvatarImage
-                          src={`https://api.dicebear.com/6.x/initials/svg?seed=Player`}
+                          src={`https://api.dicebear.com/6.x/initials/svg?seed=${entry.dialog.Speaker}`}
                         />
-                        <AvatarFallback>P</AvatarFallback>
+                        <AvatarFallback>
+                          {entry.dialog.Speaker[0]}
+                        </AvatarFallback>
                       </Avatar>
-                      <div className="mx-2 p-3 rounded-lg bg-primary text-primary-foreground">
-                        <p className="text-sm">{entry.selectedOption}</p>
+                      <div
+                        className={`mx-2 p-3 rounded-lg ${
+                          entry.dialog.Position.toLowerCase() === "right"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-secondary text-secondary-foreground"
+                        }`}
+                      >
+                        <p className="text-sm">{entry.dialog.Text}</p>
                       </div>
                     </div>
                   </motion.div>
@@ -154,41 +154,44 @@ const DialogPreview: React.FC<DialogPreviewProps> = ({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <div
-                  className={`flex ${
-                    currentDialog.Position.toLowerCase() === "right"
-                      ? "justify-end"
-                      : "justify-start"
-                  } mb-4`}
-                >
+                {/* Only show the dialog text if there are no options */}
+                {currentDialog.Options.length === 0 && (
                   <div
                     className={`flex ${
                       currentDialog.Position.toLowerCase() === "right"
-                        ? "flex-row-reverse"
-                        : "flex-row"
-                    } items-end`}
+                        ? "justify-end"
+                        : "justify-start"
+                    } mb-4`}
                   >
-                    <Avatar className="w-8 h-8">
-                      <AvatarImage
-                        src={`https://api.dicebear.com/6.x/initials/svg?seed=${currentDialog.Speaker}`}
-                      />
-                      <AvatarFallback>
-                        {currentDialog.Speaker[0]}
-                      </AvatarFallback>
-                    </Avatar>
                     <div
-                      className={`mx-2 p-3 rounded-lg ${
+                      className={`flex ${
                         currentDialog.Position.toLowerCase() === "right"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-secondary text-secondary-foreground"
-                      }`}
+                          ? "flex-row-reverse"
+                          : "flex-row"
+                      } items-end`}
                     >
-                      <p className="text-sm">{currentDialog.Text}</p>
+                      <Avatar className="w-8 h-8">
+                        <AvatarImage
+                          src={`https://api.dicebear.com/6.x/initials/svg?seed=${currentDialog.Speaker}`}
+                        />
+                        <AvatarFallback>
+                          {currentDialog.Speaker[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div
+                        className={`mx-2 p-3 rounded-lg ${
+                          currentDialog.Position.toLowerCase() === "right"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-secondary text-secondary-foreground"
+                        }`}
+                      >
+                        <p className="text-sm">{currentDialog.Text}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
-                {/* Options or Next Dialog Button */}
+                {/* Modified Options or End Dialog Button */}
                 {showOptions && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
@@ -203,27 +206,22 @@ const DialogPreview: React.FC<DialogPreviewProps> = ({
                           variant="outline"
                           className="w-full text-left justify-start"
                           onClick={() =>
-                            handleOptionClick(option.NextDialog, option.Text)
+                            handleOptionClick(
+                              option.NextDialog ?? currentDialog.DialogId + 1,
+                              option.Text
+                            )
                           }
                         >
                           {option.Text}
                         </Button>
                       ))
-                    ) : currentDialog.NextDialogId ? (
+                    ) : (
                       <Button
                         variant="outline"
                         className="w-full"
                         onClick={handleNextDialog}
                       >
                         Continue
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        className="w-full"
-                        onClick={handleRestart}
-                      >
-                        End of Dialog (Restart)
                       </Button>
                     )}
                   </motion.div>
