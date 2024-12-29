@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -43,46 +43,48 @@ const DialogPreview: React.FC<DialogPreviewProps> = ({
 
   const currentDialog = dialogs.find((d) => d.DialogId === currentDialogId);
 
+  // Add a useEffect to auto-continue when there's a NextDialogId
+  useEffect(() => {
+    if (
+      currentDialog &&
+      !currentDialog.Options.length &&
+      currentDialog.NextDialogId
+    ) {
+      const timeoutId = setTimeout(() => {
+        handleNextDialog();
+      }, 100); // Wait 1.5 seconds before auto-continuing
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [currentDialog]);
+
   const handleOptionClick = (
     nextDialogId: number | null,
     optionText: string
   ) => {
     if (!currentDialog) return;
 
-    // First add the options-only dialog
+    // Add just the player's selected option without modifying the speaker
     setMessageHistory((prev) => [
       ...prev,
       {
         dialog: {
           ...currentDialog,
-          Text: "", // Clear the text since it's an options dialog
-        },
-      },
-      // Then add the selected option as player's choice
-      {
-        dialog: {
-          ...currentDialog,
-          Speaker: "Player",
-          Text: optionText,
-          Position: "right",
+          Text: optionText, // Use the option text
+          Position: "right", // Keep option responses on the right
         },
       },
     ]);
 
-    setCurrentDialogId(nextDialogId);
-    setShowOptions(true);
+    setCurrentDialogId(nextDialogId ?? currentDialog.DialogId + 1);
   };
 
-  // Modify handleNextDialog to use default next dialog ID
+  // Modify handleNextDialog to be more streamlined
   const handleNextDialog = () => {
     if (!currentDialog) return;
 
     setMessageHistory((prev) => [...prev, { dialog: currentDialog }]);
-    // If NextDialogId is not set, default to current DialogId + 1
-    setCurrentDialogId(
-      currentDialog.NextDialogId ?? currentDialog.DialogId + 1
-    );
-    setShowOptions(true);
+    setCurrentDialogId(currentDialog.NextDialogId ?? currentDialogId + 1);
   };
 
   const handleRestart = () => {
@@ -110,7 +112,10 @@ const DialogPreview: React.FC<DialogPreviewProps> = ({
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
+                    transition={{
+                      duration: 0.0,
+                      delay: 0, // Remove any delay in the animation
+                    }}
                     className={`flex ${
                       entry.dialog.Position.toLowerCase() === "right"
                         ? "justify-end"
@@ -194,36 +199,33 @@ const DialogPreview: React.FC<DialogPreviewProps> = ({
                 {/* Modified Options or End Dialog Button */}
                 {showOptions && (
                   <motion.div
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.2, delay: 0.3 }}
                     className="space-y-2 pl-12"
                   >
-                    {currentDialog.Options.length > 0 ? (
-                      currentDialog.Options.map((option, index) => (
-                        <Button
-                          key={index}
-                          variant="outline"
-                          className="w-full text-left justify-start"
-                          onClick={() =>
-                            handleOptionClick(
-                              option.NextDialog ?? currentDialog.DialogId + 1,
-                              option.Text
-                            )
-                          }
-                        >
-                          {option.Text}
-                        </Button>
-                      ))
-                    ) : (
-                      <Button
-                        variant="outline"
-                        className="w-full"
-                        onClick={handleNextDialog}
-                      >
-                        Continue
-                      </Button>
-                    )}
+                    {currentDialog?.Options.length > 0
+                      ? currentDialog.Options.map((option, index) => (
+                          <Button
+                            key={index}
+                            variant="outline"
+                            className="w-full text-left justify-start"
+                            onClick={() =>
+                              handleOptionClick(option.NextDialog, option.Text)
+                            }
+                          >
+                            {option.Text}
+                          </Button>
+                        ))
+                      : !currentDialog?.NextDialogId && (
+                          <Button
+                            variant="outline"
+                            className="w-full"
+                            onClick={handleRestart}
+                          >
+                            End of Dialog (Restart)
+                          </Button>
+                        )}
                   </motion.div>
                 )}
               </motion.div>
