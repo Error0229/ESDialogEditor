@@ -80,6 +80,28 @@ const DialogEditor = () => {
     }
   );
 
+  // Add this with other state declarations
+  const [uniqueAnimations, setUniqueAnimations] = useState<string[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("characterAnimations");
+      return saved
+        ? JSON.parse(saved)
+        : ["Idle", "Shaking", "Zooming", "Running"];
+    }
+    return ["Idle", "Shaking", "Zooming", "Running"];
+  });
+
+  // Add this with other state declarations near the top
+  const [uniqueSfx, setUniqueSfx] = useState<string[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("dialogSfx");
+      return saved
+        ? JSON.parse(saved)
+        : ["Click", "Notification", "Success", "Error"];
+    }
+    return ["Click", "Notification", "Success", "Error"];
+  });
+
   // Add these effects to persist changes
   useEffect(() => {
     if (typeof window !== "undefined" && uniqueCharacterNames.length > 0) {
@@ -99,10 +121,28 @@ const DialogEditor = () => {
     }
   }, [uniqueCharacterImages]);
 
+  // Add this with other useEffect hooks
+  useEffect(() => {
+    if (typeof window !== "undefined" && uniqueAnimations.length > 0) {
+      localStorage.setItem(
+        "characterAnimations",
+        JSON.stringify(uniqueAnimations)
+      );
+    }
+  }, [uniqueAnimations]);
+
+  // Add this with other useEffect hooks
+  useEffect(() => {
+    if (typeof window !== "undefined" && uniqueSfx.length > 0) {
+      localStorage.setItem("dialogSfx", JSON.stringify(uniqueSfx));
+    }
+  }, [uniqueSfx]);
+
   // Update the existing useEffect to merge with stored names
   useEffect(() => {
     const names = new Set<string>(uniqueCharacterNames);
     const images = new Set<string>(uniqueCharacterImages);
+    const animations = new Set<string>(uniqueAnimations);
 
     scenes.forEach((scene) => {
       if (scene.NPCName) names.add(scene.NPCName);
@@ -115,6 +155,7 @@ const DialogEditor = () => {
             dialog.Characters.forEach((char) => {
               if (char?.Name) names.add(char.Name);
               if (char?.Image) images.add(char.Image);
+              if (char?.Animation) animations.add(char.Animation);
             });
           }
 
@@ -129,6 +170,7 @@ const DialogEditor = () => {
 
     setUniqueCharacterNames(Array.from(names));
     setUniqueCharacterImages(Array.from(images));
+    setUniqueAnimations(Array.from(animations));
   }, [scenes]);
   // Create these components for reuse
   // Add these types at the top of the file
@@ -144,6 +186,18 @@ const DialogEditor = () => {
     setUniqueCharacterImages(
       uniqueCharacterImages.filter((image) => image !== imageToRemove)
     );
+  };
+
+  // Add these functions near the other state management functions
+  const removeAnimation = (animationToRemove: string) => {
+    setUniqueAnimations(
+      uniqueAnimations.filter((anim) => anim !== animationToRemove)
+    );
+  };
+
+  // Add this with other remove functions
+  const removeSfx = (sfxToRemove: string) => {
+    setUniqueSfx(uniqueSfx.filter((sfx) => sfx !== sfxToRemove));
   };
 
   // Update the AutocompleteInput component
@@ -162,6 +216,10 @@ const DialogEditor = () => {
         removeCharacterName(item);
       } else if (placeholder.includes("image")) {
         removeCharacterImage(item);
+      } else if (placeholder.includes("animation")) {
+        removeAnimation(item);
+      } else if (placeholder.includes("sfx")) {
+        removeSfx(item);
       }
     };
 
@@ -276,7 +334,9 @@ const DialogEditor = () => {
     ]);
   };
   // Add this near the top of the DialogEditor component
-  const [highestDialogId, setHighestDialogId] = useState(0);
+  const [highestDialogIds, setHighestDialogIds] = useState<{
+    [key: number]: number;
+  }>({});
 
   // Update the useEffect that loads scenes to find the highest dialog ID
   useEffect(() => {
@@ -288,14 +348,16 @@ const DialogEditor = () => {
           if (Array.isArray(parsedScenes)) {
             setScenes(parsedScenes);
 
-            // Find highest dialog ID
-            let maxId = 0;
-            parsedScenes.forEach((scene) => {
+            // Initialize highest dialog IDs for each scene
+            const newHighestIds = {};
+            parsedScenes.forEach((scene, sceneIndex) => {
+              let maxId = 0;
               scene.Dialogs?.forEach((dialog) => {
                 maxId = Math.max(maxId, dialog.DialogId || 0);
               });
+              newHighestIds[sceneIndex] = maxId;
             });
-            setHighestDialogId(maxId);
+            setHighestDialogIds(newHighestIds);
           }
         }
       } catch (e) {
@@ -305,9 +367,14 @@ const DialogEditor = () => {
   }, []);
 
   // Modify the addDialog function
-  const addDialog = (sceneIndex) => {
-    const newDialogId = highestDialogId + 1;
-    setHighestDialogId(newDialogId);
+  const addDialog = (sceneIndex: number) => {
+    const currentHighestId = highestDialogIds[sceneIndex] || 0;
+    const newDialogId = currentHighestId + 1;
+
+    setHighestDialogIds((prev) => ({
+      ...prev,
+      [sceneIndex]: newDialogId,
+    }));
 
     const newScenes = [...scenes];
     newScenes[sceneIndex].Dialogs.push({
@@ -316,6 +383,7 @@ const DialogEditor = () => {
       Text: "",
       Position: "Center",
       DialogImage: "Common",
+      SoundEffect: "", // Add this line
       NextDialogId: null,
       Options: [],
       Characters: [],
@@ -327,29 +395,36 @@ const DialogEditor = () => {
   };
 
   // Add a new function to update dialog ID
-  const updateDialogId = (sceneIndex, dialogIndex, newId) => {
+  const updateDialogId = (
+    sceneIndex: number,
+    dialogIndex: number,
+    newId: string
+  ) => {
     const newScenes = [...scenes];
     const currentId = newScenes[sceneIndex].Dialogs[dialogIndex].DialogId;
 
-    // Check if ID already exists in any scene
-    const idExists = scenes.some((scene) =>
-      scene.Dialogs.some(
-        (dialog) =>
-          dialog.DialogId === parseInt(newId) && dialog.DialogId !== currentId
-      )
+    // Check if ID already exists in THIS scene only
+    const idExists = scenes[sceneIndex].Dialogs.some(
+      (dialog) =>
+        dialog.DialogId === parseInt(newId) && dialog.DialogId !== currentId
     );
 
     if (idExists) {
-      alert("This Dialog ID already exists. Please choose a different one.");
+      alert(
+        "This Dialog ID already exists in this scene. Please choose a different one."
+      );
       return;
     }
 
     newScenes[sceneIndex].Dialogs[dialogIndex].DialogId = parseInt(newId);
     setScenes(newScenes);
 
-    // Update highest ID if necessary
-    if (parseInt(newId) > highestDialogId) {
-      setHighestDialogId(parseInt(newId));
+    // Update highest ID for this scene if necessary
+    if (parseInt(newId) > (highestDialogIds[sceneIndex] || 0)) {
+      setHighestDialogIds((prev) => ({
+        ...prev,
+        [sceneIndex]: parseInt(newId),
+      }));
     }
   };
 
@@ -491,8 +566,13 @@ const DialogEditor = () => {
 
   // Add a new function to insert a dialog at a specific index
   const insertDialog = (sceneIndex: number, insertIndex: number) => {
-    const newDialogId = highestDialogId + 1;
-    setHighestDialogId(newDialogId);
+    const currentHighestId = highestDialogIds[sceneIndex] || 0;
+    const newDialogId = currentHighestId + 1;
+
+    setHighestDialogIds((prev) => ({
+      ...prev,
+      [sceneIndex]: newDialogId,
+    }));
 
     const newScenes = [...scenes];
     newScenes[sceneIndex].Dialogs.splice(insertIndex, 0, {
@@ -501,6 +581,7 @@ const DialogEditor = () => {
       Text: "",
       Position: "Center",
       DialogImage: "Common",
+      SoundEffect: "", // Add this line
       NextDialogId: null,
       Options: [],
       Characters: [],
@@ -819,6 +900,23 @@ const DialogEditor = () => {
                                 </div>
 
                                 <div className="space-y-2">
+                                  <Label>Sound Effect</Label>
+                                  <AutocompleteInput
+                                    value={dialog.SoundEffect}
+                                    onChange={(value) =>
+                                      updateDialog(
+                                        sceneIndex,
+                                        dialogIndex,
+                                        "SoundEffect",
+                                        value
+                                      )
+                                    }
+                                    items={uniqueSfx}
+                                    placeholder="Select sound effect"
+                                  />
+                                </div>
+
+                                <div className="space-y-2">
                                   <Label>Position</Label>
                                   <Select
                                     value={dialog.Position}
@@ -966,9 +1064,9 @@ const DialogEditor = () => {
                                       </div>
                                       <div className="space-y-2">
                                         <Label>Animation</Label>
-                                        <Select
+                                        <AutocompleteInput
                                           value={char.Animation}
-                                          onValueChange={(value) =>
+                                          onChange={(value) =>
                                             updateCharacter(
                                               sceneIndex,
                                               dialogIndex,
@@ -977,25 +1075,9 @@ const DialogEditor = () => {
                                               value
                                             )
                                           }
-                                        >
-                                          <SelectTrigger>
-                                            <SelectValue placeholder="Select animation" />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            <SelectItem value="Idle">
-                                              Idle
-                                            </SelectItem>
-                                            <SelectItem value="Shaking">
-                                              Shaking
-                                            </SelectItem>
-                                            <SelectItem value="Zooming">
-                                              Zooming
-                                            </SelectItem>
-                                            <SelectItem value="Running">
-                                              Running
-                                            </SelectItem>
-                                          </SelectContent>
-                                        </Select>
+                                          items={uniqueAnimations}
+                                          placeholder="Select character animation"
+                                        />
                                       </div>
                                       <div className="space-y-2">
                                         <Label>Position</Label>
