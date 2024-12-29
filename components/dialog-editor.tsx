@@ -54,6 +54,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
+// Add this import at the top
+import { DialogCard } from "./dialog-card";
+
 const DialogEditor = () => {
   const [scenes, setScenes] = useState([]);
   const [previewSceneIndex, setPreviewSceneIndex] = useState<number | null>(
@@ -595,22 +598,11 @@ const DialogEditor = () => {
   const [collapsedScenes, setCollapsedScenes] = useState<{
     [key: number]: boolean;
   }>({});
-  const [collapsedDialogs, setCollapsedDialogs] = useState<{
-    [key: string]: boolean;
-  }>({});
 
   const toggleSceneCollapse = (sceneIndex: number) => {
     setCollapsedScenes((prev) => ({
       ...prev,
       [sceneIndex]: !prev[sceneIndex],
-    }));
-  };
-
-  const toggleDialogCollapse = (sceneIndex: number, dialogIndex: number) => {
-    const key = `${sceneIndex}-${dialogIndex}`;
-    setCollapsedDialogs((prev) => ({
-      ...prev,
-      [key]: !prev[key],
     }));
   };
 
@@ -814,22 +806,6 @@ const DialogEditor = () => {
                         <Card className="w-full">
                           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                             <div className="flex items-center gap-2">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() =>
-                                  toggleDialogCollapse(sceneIndex, dialogIndex)
-                                }
-                                className="h-8 w-8 p-0"
-                              >
-                                {collapsedDialogs[
-                                  `${sceneIndex}-${dialogIndex}`
-                                ] ? (
-                                  <ChevronRight className="h-4 w-4" />
-                                ) : (
-                                  <ChevronDown className="h-4 w-4" />
-                                )}
-                              </Button>
                               <CardTitle className="text-base flex items-center gap-2">
                                 Dialog
                                 <Input
@@ -877,167 +853,289 @@ const DialogEditor = () => {
                               </AlertDialogContent>
                             </AlertDialog>
                           </CardHeader>
-                          {!collapsedDialogs[
-                            `${sceneIndex}-${dialogIndex}`
-                          ] && (
-                            <CardContent className="space-y-4">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                  <Label>Speaker</Label>
-                                  <AutocompleteInput
-                                    value={dialog.Speaker}
-                                    onChange={(value) =>
-                                      updateDialog(
-                                        sceneIndex,
-                                        dialogIndex,
-                                        "Speaker",
-                                        value
-                                      )
-                                    }
-                                    items={uniqueCharacterNames}
-                                    placeholder="Select speaker"
-                                  />
-                                </div>
-
-                                <div className="space-y-2">
-                                  <Label>Sound Effect</Label>
-                                  <AutocompleteInput
-                                    value={dialog.SoundEffect}
-                                    onChange={(value) =>
-                                      updateDialog(
-                                        sceneIndex,
-                                        dialogIndex,
-                                        "SoundEffect",
-                                        value
-                                      )
-                                    }
-                                    items={uniqueSfx}
-                                    placeholder="Select sound effect"
-                                  />
-                                </div>
-
-                                <div className="space-y-2">
-                                  <Label>Position</Label>
-                                  <Select
-                                    value={dialog.Position}
-                                    onValueChange={(value) =>
-                                      updateDialog(
-                                        sceneIndex,
-                                        dialogIndex,
-                                        "Position",
-                                        value
-                                      )
-                                    }
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select position" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="Left">Left</SelectItem>
-                                      <SelectItem value="Center">
-                                        Center
-                                      </SelectItem>
-                                      <SelectItem value="Right">
-                                        Right
-                                      </SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                <div className="space-y-2">
-                                  <Label>Next Dialog ID</Label>
-                                  <Input
-                                    type="number"
-                                    value={dialog.NextDialogId || ""}
-                                    onChange={(e) =>
-                                      updateDialog(
-                                        sceneIndex,
-                                        dialogIndex,
-                                        "NextDialogId",
-                                        parseInt(e.target.value) || null
-                                      )
-                                    }
-                                    placeholder="Next Dialog ID"
-                                  />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label>Dialog image</Label>
-                                  <Select
-                                    value={dialog.DialogImage}
-                                    onValueChange={(value) =>
-                                      updateDialog(
-                                        sceneIndex,
-                                        dialogIndex,
-                                        "DialogImage",
-                                        value
-                                      )
-                                    }
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select Dialog image" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="Common">
-                                        Common
-                                      </SelectItem>
-                                      <SelectItem value="Thinking">
-                                        Thinking
-                                      </SelectItem>
-                                      <SelectItem value="Overthinking">
-                                        Overthinking
-                                      </SelectItem>
-                                      <SelectItem value="Surprising">
-                                        Surprising
-                                      </SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                <div className="space-y-2 col-span-2">
-                                  <Label>Dialog Text</Label>
-                                  <Textarea
-                                    value={dialog.Text}
-                                    onChange={(e) =>
-                                      updateDialog(
-                                        sceneIndex,
-                                        dialogIndex,
-                                        "Text",
-                                        e.target.value
-                                      )
-                                    }
-                                    placeholder="Dialog Text"
-                                    rows={3}
-                                  />
-                                </div>
+                          <CardContent className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label>Speaker</Label>
+                                <AutocompleteInput
+                                  value={dialog.Speaker}
+                                  onChange={(value) =>
+                                    updateDialog(
+                                      sceneIndex,
+                                      dialogIndex,
+                                      "Speaker",
+                                      value
+                                    )
+                                  }
+                                  items={uniqueCharacterNames}
+                                  placeholder="Select speaker"
+                                />
                               </div>
 
-                              {/* Characters Section */}
                               <div className="space-y-2">
-                                <div className="flex justify-between items-center">
-                                  <Label>Characters</Label>
-                                  <Button
-                                    onClick={() =>
-                                      addCharacter(sceneIndex, dialogIndex)
-                                    }
-                                    variant="outline"
-                                    size="sm"
-                                  >
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    Add Character
-                                  </Button>
-                                </div>
-                                {dialog.Characters.map((char, charIndex) => (
-                                  <Card key={charIndex} className="p-4">
+                                <Label>Sound Effect</Label>
+                                <AutocompleteInput
+                                  value={dialog.SoundEffect}
+                                  onChange={(value) =>
+                                    updateDialog(
+                                      sceneIndex,
+                                      dialogIndex,
+                                      "SoundEffect",
+                                      value
+                                    )
+                                  }
+                                  items={uniqueSfx}
+                                  placeholder="Select sound effect"
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label>Position</Label>
+                                <Select
+                                  value={dialog.Position}
+                                  onValueChange={(value) =>
+                                    updateDialog(
+                                      sceneIndex,
+                                      dialogIndex,
+                                      "Position",
+                                      value
+                                    )
+                                  }
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select position" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Left">Left</SelectItem>
+                                    <SelectItem value="Center">
+                                      Center
+                                    </SelectItem>
+                                    <SelectItem value="Right">Right</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Next Dialog ID</Label>
+                                <Input
+                                  type="number"
+                                  value={dialog.NextDialogId || ""}
+                                  onChange={(e) =>
+                                    updateDialog(
+                                      sceneIndex,
+                                      dialogIndex,
+                                      "NextDialogId",
+                                      parseInt(e.target.value) || null
+                                    )
+                                  }
+                                  placeholder="Next Dialog ID"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Dialog image</Label>
+                                <Select
+                                  value={dialog.DialogImage}
+                                  onValueChange={(value) =>
+                                    updateDialog(
+                                      sceneIndex,
+                                      dialogIndex,
+                                      "DialogImage",
+                                      value
+                                    )
+                                  }
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select Dialog image" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Common">
+                                      Common
+                                    </SelectItem>
+                                    <SelectItem value="Thinking">
+                                      Thinking
+                                    </SelectItem>
+                                    <SelectItem value="Overthinking">
+                                      Overthinking
+                                    </SelectItem>
+                                    <SelectItem value="Surprising">
+                                      Surprising
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-2 col-span-2">
+                                <Label>Dialog Text</Label>
+                                <Textarea
+                                  value={dialog.Text}
+                                  onChange={(e) =>
+                                    updateDialog(
+                                      sceneIndex,
+                                      dialogIndex,
+                                      "Text",
+                                      e.target.value
+                                    )
+                                  }
+                                  placeholder="Dialog Text"
+                                  rows={3}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Characters Section */}
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-center">
+                                <Label>Characters</Label>
+                                <Button
+                                  onClick={() =>
+                                    addCharacter(sceneIndex, dialogIndex)
+                                  }
+                                  variant="outline"
+                                  size="sm"
+                                >
+                                  <Plus className="mr-2 h-4 w-4" />
+                                  Add Character
+                                </Button>
+                              </div>
+                              {dialog.Characters.map((char, charIndex) => (
+                                <Card key={charIndex} className="p-4">
+                                  <div className="flex justify-between items-center mb-2">
+                                    <span className="text-sm font-medium">
+                                      Character {charIndex + 1}
+                                    </span>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() =>
+                                        removeCharacter(
+                                          sceneIndex,
+                                          dialogIndex,
+                                          charIndex
+                                        )
+                                      }
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div className="space-y-2">
+                                      <Label>Name</Label>
+                                      <AutocompleteInput
+                                        value={char.Name}
+                                        onChange={(value) =>
+                                          updateCharacter(
+                                            sceneIndex,
+                                            dialogIndex,
+                                            charIndex,
+                                            "Name",
+                                            value
+                                          )
+                                        }
+                                        items={uniqueCharacterNames || []}
+                                        placeholder="Select character name"
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label>Animation</Label>
+                                      <AutocompleteInput
+                                        value={char.Animation}
+                                        onChange={(value) =>
+                                          updateCharacter(
+                                            sceneIndex,
+                                            dialogIndex,
+                                            charIndex,
+                                            "Animation",
+                                            value
+                                          )
+                                        }
+                                        items={uniqueAnimations}
+                                        placeholder="Select character animation"
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label>Position</Label>
+                                      <Select
+                                        value={char.Position}
+                                        onValueChange={(value) =>
+                                          updateCharacter(
+                                            sceneIndex,
+                                            dialogIndex,
+                                            charIndex,
+                                            "Position",
+                                            value
+                                          )
+                                        }
+                                      >
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Select position" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="Left">
+                                            Left
+                                          </SelectItem>
+                                          <SelectItem value="Center">
+                                            Center
+                                          </SelectItem>
+                                          <SelectItem value="Right">
+                                            Right
+                                          </SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label>Image</Label>
+                                      <AutocompleteInput
+                                        value={char.Image}
+                                        onChange={(value) =>
+                                          updateCharacter(
+                                            sceneIndex,
+                                            dialogIndex,
+                                            charIndex,
+                                            "Image",
+                                            value
+                                          )
+                                        }
+                                        items={uniqueCharacterImages}
+                                        placeholder="Select character image"
+                                      />
+                                    </div>
+                                  </div>
+                                </Card>
+                              ))}
+                            </div>
+                            {/* Options Section */}
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-center">
+                                <Label>Dialog Options</Label>
+                                <Button
+                                  onClick={() =>
+                                    addOption(sceneIndex, dialogIndex)
+                                  }
+                                  variant="outline"
+                                  size="sm"
+                                >
+                                  <Plus className="mr-2 h-4 w-4" />
+                                  Add Option
+                                </Button>
+                              </div>
+                              {dialog.Options.map((option, optionIndex) => (
+                                <motion.div
+                                  key={optionIndex}
+                                  initial={{ opacity: 0, x: -20 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  transition={{ duration: 0.2 }}
+                                >
+                                  <Card className="p-4">
                                     <div className="flex justify-between items-center mb-2">
                                       <span className="text-sm font-medium">
-                                        Character {charIndex + 1}
+                                        Option {optionIndex + 1}
                                       </span>
                                       <Button
                                         variant="ghost"
                                         size="icon"
                                         onClick={() =>
-                                          removeCharacter(
+                                          removeOption(
                                             sceneIndex,
                                             dialogIndex,
-                                            charIndex
+                                            optionIndex
                                           )
                                         }
                                       >
@@ -1046,249 +1144,121 @@ const DialogEditor = () => {
                                     </div>
                                     <div className="grid grid-cols-2 gap-2">
                                       <div className="space-y-2">
-                                        <Label>Name</Label>
-                                        <AutocompleteInput
-                                          value={char.Name}
-                                          onChange={(value) =>
-                                            updateCharacter(
+                                        <Label>Option Text</Label>
+                                        <Textarea
+                                          value={option.Text}
+                                          onChange={(e) =>
+                                            updateOption(
                                               sceneIndex,
                                               dialogIndex,
-                                              charIndex,
-                                              "Name",
-                                              value
+                                              optionIndex,
+                                              "Text",
+                                              e.target.value
                                             )
                                           }
-                                          items={uniqueCharacterNames || []}
-                                          placeholder="Select character name"
+                                          placeholder="What should this option say?"
+                                          rows={2}
                                         />
                                       </div>
                                       <div className="space-y-2">
-                                        <Label>Animation</Label>
-                                        <AutocompleteInput
-                                          value={char.Animation}
-                                          onChange={(value) =>
-                                            updateCharacter(
+                                        <Label>Next Dialog ID</Label>
+                                        <Input
+                                          type="number"
+                                          value={option.NextDialog || ""}
+                                          onChange={(e) =>
+                                            updateOption(
                                               sceneIndex,
                                               dialogIndex,
-                                              charIndex,
-                                              "Animation",
-                                              value
+                                              optionIndex,
+                                              "NextDialog",
+                                              parseInt(e.target.value) || null
                                             )
                                           }
-                                          items={uniqueAnimations}
-                                          placeholder="Select character animation"
-                                        />
-                                      </div>
-                                      <div className="space-y-2">
-                                        <Label>Position</Label>
-                                        <Select
-                                          value={char.Position}
-                                          onValueChange={(value) =>
-                                            updateCharacter(
-                                              sceneIndex,
-                                              dialogIndex,
-                                              charIndex,
-                                              "Position",
-                                              value
-                                            )
-                                          }
-                                        >
-                                          <SelectTrigger>
-                                            <SelectValue placeholder="Select position" />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            <SelectItem value="Left">
-                                              Left
-                                            </SelectItem>
-                                            <SelectItem value="Center">
-                                              Center
-                                            </SelectItem>
-                                            <SelectItem value="Right">
-                                              Right
-                                            </SelectItem>
-                                          </SelectContent>
-                                        </Select>
-                                      </div>
-                                      <div className="space-y-2">
-                                        <Label>Image</Label>
-                                        <AutocompleteInput
-                                          value={char.Image}
-                                          onChange={(value) =>
-                                            updateCharacter(
-                                              sceneIndex,
-                                              dialogIndex,
-                                              charIndex,
-                                              "Image",
-                                              value
-                                            )
-                                          }
-                                          items={uniqueCharacterImages}
-                                          placeholder="Select character image"
+                                          placeholder="Which dialog should this lead to?"
                                         />
                                       </div>
                                     </div>
                                   </Card>
-                                ))}
-                              </div>
-                              {/* Options Section */}
-                              <div className="space-y-2">
-                                <div className="flex justify-between items-center">
-                                  <Label>Dialog Options</Label>
-                                  <Button
-                                    onClick={() =>
-                                      addOption(sceneIndex, dialogIndex)
-                                    }
-                                    variant="outline"
-                                    size="sm"
-                                  >
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    Add Option
-                                  </Button>
-                                </div>
-                                {dialog.Options.map((option, optionIndex) => (
-                                  <motion.div
-                                    key={optionIndex}
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ duration: 0.2 }}
-                                  >
-                                    <Card className="p-4">
-                                      <div className="flex justify-between items-center mb-2">
-                                        <span className="text-sm font-medium">
-                                          Option {optionIndex + 1}
-                                        </span>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          onClick={() =>
-                                            removeOption(
-                                              sceneIndex,
-                                              dialogIndex,
-                                              optionIndex
-                                            )
-                                          }
-                                        >
-                                          <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                      </div>
-                                      <div className="grid grid-cols-2 gap-2">
-                                        <div className="space-y-2">
-                                          <Label>Option Text</Label>
-                                          <Textarea
-                                            value={option.Text}
-                                            onChange={(e) =>
-                                              updateOption(
-                                                sceneIndex,
-                                                dialogIndex,
-                                                optionIndex,
-                                                "Text",
-                                                e.target.value
-                                              )
-                                            }
-                                            placeholder="What should this option say?"
-                                            rows={2}
-                                          />
-                                        </div>
-                                        <div className="space-y-2">
-                                          <Label>Next Dialog ID</Label>
-                                          <Input
-                                            type="number"
-                                            value={option.NextDialog || ""}
-                                            onChange={(e) =>
-                                              updateOption(
-                                                sceneIndex,
-                                                dialogIndex,
-                                                optionIndex,
-                                                "NextDialog",
-                                                parseInt(e.target.value) || null
-                                              )
-                                            }
-                                            placeholder="Which dialog should this lead to?"
-                                          />
-                                        </div>
-                                      </div>
-                                    </Card>
-                                  </motion.div>
-                                ))}
-                              </div>
+                                </motion.div>
+                              ))}
+                            </div>
 
-                              {/* EndDialog NextState Section */}
-                              <div className="space-y-2">
-                                <div className="flex justify-between items-center">
-                                  <Label>End Dialog States</Label>
-                                  <Button
-                                    onClick={() =>
-                                      addEndDialogState(sceneIndex, dialogIndex)
-                                    }
-                                    variant="outline"
-                                    size="sm"
-                                  >
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    Add State
-                                  </Button>
-                                </div>
-                                {dialog.EndDialog.NextState.map(
-                                  (state, stateIndex) => (
-                                    <Card key={stateIndex} className="p-4">
-                                      <div className="flex justify-between items-center mb-2">
-                                        <span className="text-sm font-medium">
-                                          State {stateIndex + 1}
-                                        </span>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          onClick={() =>
-                                            removeEndDialogState(
+                            {/* EndDialog NextState Section */}
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-center">
+                                <Label>End Dialog States</Label>
+                                <Button
+                                  onClick={() =>
+                                    addEndDialogState(sceneIndex, dialogIndex)
+                                  }
+                                  variant="outline"
+                                  size="sm"
+                                >
+                                  <Plus className="mr-2 h-4 w-4" />
+                                  Add State
+                                </Button>
+                              </div>
+                              {dialog.EndDialog.NextState.map(
+                                (state, stateIndex) => (
+                                  <Card key={stateIndex} className="p-4">
+                                    <div className="flex justify-between items-center mb-2">
+                                      <span className="text-sm font-medium">
+                                        State {stateIndex + 1}
+                                      </span>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() =>
+                                          removeEndDialogState(
+                                            sceneIndex,
+                                            dialogIndex,
+                                            stateIndex
+                                          )
+                                        }
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div className="space-y-2">
+                                        <Label>Character Name</Label>
+                                        <AutocompleteInput
+                                          value={state.Name}
+                                          onChange={(value) =>
+                                            updateEndDialogState(
                                               sceneIndex,
                                               dialogIndex,
-                                              stateIndex
+                                              stateIndex,
+                                              "Name",
+                                              value
                                             )
                                           }
-                                        >
-                                          <Trash2 className="h-4 w-4" />
-                                        </Button>
+                                          items={uniqueCharacterNames}
+                                          placeholder="Select character name"
+                                        />
                                       </div>
-                                      <div className="grid grid-cols-2 gap-2">
-                                        <div className="space-y-2">
-                                          <Label>Character Name</Label>
-                                          <AutocompleteInput
-                                            value={state.Name}
-                                            onChange={(value) =>
-                                              updateEndDialogState(
-                                                sceneIndex,
-                                                dialogIndex,
-                                                stateIndex,
-                                                "Name",
-                                                value
-                                              )
-                                            }
-                                            items={uniqueCharacterNames}
-                                            placeholder="Select character name"
-                                          />
-                                        </div>
-                                        <div className="space-y-2">
-                                          <Label>Next Character State</Label>
-                                          <Input
-                                            value={state.State}
-                                            onChange={(e) =>
-                                              updateEndDialogState(
-                                                sceneIndex,
-                                                dialogIndex,
-                                                stateIndex,
-                                                "State",
-                                                e.target.value
-                                              )
-                                            }
-                                            placeholder="New State"
-                                          />
-                                        </div>
+                                      <div className="space-y-2">
+                                        <Label>Next Character State</Label>
+                                        <Input
+                                          value={state.State}
+                                          onChange={(e) =>
+                                            updateEndDialogState(
+                                              sceneIndex,
+                                              dialogIndex,
+                                              stateIndex,
+                                              "State",
+                                              e.target.value
+                                            )
+                                          }
+                                          placeholder="New State"
+                                        />
                                       </div>
-                                    </Card>
-                                  )
-                                )}
-                              </div>
-                            </CardContent>
-                          )}
+                                    </div>
+                                  </Card>
+                                )
+                              )}
+                            </div>
+                          </CardContent>
                         </Card>
                       </motion.div>
                       <motion.div
@@ -1315,6 +1285,21 @@ const DialogEditor = () => {
           </Card>
         </motion.div>
       ))}
+
+      {/* Add a grid view of scenes when no scene is expanded */}
+      {Object.values(collapsedScenes).every(Boolean) && (
+        <div className="grid grid-cols-3 gap-4 mt-4">
+          {scenes.map((scene, index) => (
+            <DialogCard
+              key={index}
+              type="scene"
+              index={index}
+              data={scene}
+              onClick={() => toggleSceneCollapse(index)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };
